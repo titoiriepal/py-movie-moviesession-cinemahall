@@ -35,7 +35,7 @@ def get_movies_sessions(
     return qs
 
 
-def get_movie_session_by_id(id_movie:int) -> MovieSession:
+def get_movie_session_by_id(id_movie: int) -> MovieSession:
     return MovieSession.objects.get(id=id_movie)
 
 
@@ -67,7 +67,6 @@ def delete_movie_session_by_id(session_id: int) -> None:
 
 def parse_show_time(show_time: str | datetime.datetime) -> datetime.datetime:
     if isinstance(show_time, datetime.datetime):
-        # Si es naive y USE_TZ=True → hazlo aware
         if timezone.is_naive(show_time):
             return timezone.make_aware(
                 show_time,
@@ -75,7 +74,6 @@ def parse_show_time(show_time: str | datetime.datetime) -> datetime.datetime:
             )
         return show_time
 
-    # 2) Si es string
     if isinstance(show_time, str):
         if show_time.endswith("Z"):
             dt = datetime.datetime.fromisoformat(show_time.replace(
@@ -89,5 +87,4 @@ def parse_show_time(show_time: str | datetime.datetime) -> datetime.datetime:
                 timezone.get_current_timezone()
             )
 
-    # 3) Cualquier otra cosa es error
     raise TypeError("show_time must be str or datetime")
