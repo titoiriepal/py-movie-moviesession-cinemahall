@@ -8,7 +8,7 @@ from db.models import CinemaHall, Movie, MovieSession
 
 
 def create_movie_session(
-        movie_show_time: datetime.datetime,
+        movie_show_time: str | datetime.datetime,
         movie_id: int,
         cinema_hall_id: int,
 ) -> None:
@@ -16,7 +16,7 @@ def create_movie_session(
     cinema_hall = CinemaHall.objects.get(id=cinema_hall_id)
 
     MovieSession.objects.create(
-        show_time=movie_show_time,
+        show_time=parse_show_time(movie_show_time),
         cinema_hall=cinema_hall,
         movie=movie,
     )
@@ -27,20 +27,23 @@ def get_movies_sessions(
 ) -> QuerySet[MovieSession]:
     qs = MovieSession.objects.all()
     if session_date is not None:
-        day = datetime.date.fromisoformat(session_date)
+        day = datetime.datetime.strptime(
+            session_date,
+            "%Y-%m-%d",
+        ).date()
         qs = qs.filter(show_time__date=day)
     return qs
 
 
-def get_movie_session_by_id(id:int) -> MovieSession:
-    return MovieSession.objects.get(id=id)
+def get_movie_session_by_id(id_movie:int) -> MovieSession:
+    return MovieSession.objects.get(id=id_movie)
 
 
 def update_movie_session(
         session_id: int,
-        show_time: Optional[str] = None,
-        movie_id: Optional[int] = None,
-        cinema_hall_id: Optional[int] = None,
+        show_time: str | datetime.datetime | None = None,
+        movie_id: int | None = None,
+        cinema_hall_id: int | None = None,
 ) -> None:
 
     session = MovieSession.objects.get(id=session_id)
@@ -62,16 +65,29 @@ def delete_movie_session_by_id(session_id: int) -> None:
     session.delete()
 
 
-def parse_show_time(show_time: str) -> datetime.datetime:
-    if show_time.endswith("Z"):
-        # UTC explícito
-        return datetime.datetime.fromisoformat(
-            show_time.replace("Z", "+00:00")
-        )
-    else:
-        # Hora local (Ucrania)
-        naive = datetime.datetime.fromisoformat(show_time)
-        return timezone.make_aware(
-            naive,
-            timezone.get_current_timezone()
-        )
+def parse_show_time(show_time: str | datetime.datetime) -> datetime.datetime:
+    if isinstance(show_time, datetime.datetime):
+        # Si es naive y USE_TZ=True → hazlo aware
+        if timezone.is_naive(show_time):
+            return timezone.make_aware(
+                show_time,
+                timezone.get_current_timezone()
+            )
+        return show_time
+
+    # 2) Si es string
+    if isinstance(show_time, str):
+        if show_time.endswith("Z"):
+            dt = datetime.datetime.fromisoformat(show_time.replace(
+                "Z", "+00:00"
+            ))
+            return timezone.localtime(dt, timezone.get_current_timezone())
+        else:
+            naive = datetime.datetime.fromisoformat(show_time)
+            return timezone.make_aware(
+                naive,
+                timezone.get_current_timezone()
+            )
+
+    # 3) Cualquier otra cosa es error
+    raise TypeError("show_time must be str or datetime")
