@@ -4,7 +4,7 @@ from typing import Optional
 from django.db.models.query import QuerySet
 from django.utils import timezone
 
-from db.models import CinemaHall, Movie, MovieSession
+from db.models import MovieSession
 
 
 def create_movie_session(
