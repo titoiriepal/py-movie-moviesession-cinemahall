@@ -33,8 +33,10 @@ def get_movies_sessions(
     return qs
 
 
-def get_movie_session_by_id(id_movie: int) -> MovieSession:
-    return MovieSession.objects.get(id=id_movie)
+def get_movie_session_by_id(
+        movie_session_id: int,
+) -> MovieSession:
+    return MovieSession.objects.get(id=movie_session_id)
 
 
 def update_movie_session(
